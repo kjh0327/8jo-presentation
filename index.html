@@ -2533,7 +2533,7 @@ function startScene(){
   try { renderer = new THREE.WebGLRenderer({ canvas: deck.querySelector('canvas.gl'), antialias: true, powerPreference: 'high-performance' }); }
   catch (e) { say('이 브라우저에서는 3D를 표시할 수 없어요.'); return false; }
   renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.setPixelRatio(PR_FULL);
+  prFor(deck.getBoundingClientRect().width); prNow = PR_FULL; renderer.setPixelRatio(PR_FULL);
   scene = new THREE.Scene(); scene.background = col('#ffffff');
   camera = new THREE.PerspectiveCamera(26, 1, .1, 200);
   return true;
@@ -2685,8 +2685,10 @@ function prev(){ if (step > 0 && !SHOTS[cur].steps[step - 1].auto) go(cur, step 
 
 /* slow computers: once frames keep running long, the scene is drawn at a lower resolution while the camera
    travels, and back at full resolution as soon as it settles (so stickers and logos stay sharp to read) */
-const PR_FULL = Math.min(devicePixelRatio || 1, 1.5), PR_MOVE = Math.max(.5, PR_FULL * .6);
-let prNow = PR_FULL, slowRun = 0, slow = false;
+// resolution: at least ~1600 drawn pixels across the stage when the screen has them, so a small stage on a phone
+// (where the sticker charts and their print are only a few hundred pixels wide) still gets sharp text; capped at the screen's own density
+let PR_FULL = 1, PR_MOVE = 1, prNow = 1, slowRun = 0, slow = false;
+function prFor(cssW){ PR_FULL = Math.min(devicePixelRatio || 1, Math.max(1.5, 1600 / Math.max(1, cssW))); PR_MOVE = Math.max(.5, PR_FULL * .6); }
 function setPR(v){ if (Math.abs(v - prNow) > .01){ prNow = v; renderer.setPixelRatio(v); } }
 let lastF = 0;
 function frame(now){
@@ -2728,7 +2730,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 // the drawing buffer follows the size the stage is shown at, not its 1600×900 layout size
-function resize(){ const r = deck.getBoundingClientRect(); renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false); }
+function resize(){ const r = deck.getBoundingClientRect(); prFor(r.width); prNow = PR_FULL; renderer.setPixelRatio(PR_FULL); renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false); }
 
 /* ---------- text motion ---------- */
 slides.forEach(s => s.querySelectorAll('h1, h2').forEach(h => {
